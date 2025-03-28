@@ -13,6 +13,7 @@ namespace GesPerWinForm
 {
     public partial class fmEmploye : Form
     {
+        private bool newOrUpd = false; // false = update, true = new
         /// <summary>
         /// Constructeur de la classe fmEmploye.
         /// </summary>
@@ -204,6 +205,8 @@ namespace GesPerWinForm
             mi_save.Enabled = true;
             mi_modify.Enabled = false;
             mi_delete.Enabled = false;
+
+            newOrUpd = true;
         }
         private void mi_delete_Click(object sender, EventArgs e)
         {
@@ -240,39 +243,56 @@ namespace GesPerWinForm
             cb_EmpSce.Enabled = true;
             mi_modify.Enabled = false;
             mi_save.Enabled = true;
+            mi_delete.Enabled = false;
+            mi_new.Enabled = false;
         }
 
         private void mi_save_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Are you sure you want to add/save this employee ?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question) == DialogResult.Yes && tb_EmpNss.Text != string.Empty)
+            string ehe = string.Empty;
+            if (newOrUpd)
+            {
+                ehe = "add";
+            }
+            else
+            {
+                ehe = "save";
+            }
+            if (MessageBox.Show("Are you sure you want to " + ehe + " this employee ?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question) == DialogResult.Yes && tb_EmpNss.Text != string.Empty)
             {
                 try
                 {
-                    string sql = "INSERT INTO employe (emp_nss, emp_nom, emp_pnom, emp_salaire, emp_qualif, emp_sce) VALUES (@EmpNss, @EmpNom, @EmpPnom, @EmpSalaire, @EmpQualif, @EmpSce)";
-
                     SqlCommand cmd = new SqlCommand();
+                    string state = string.Empty;
+                    string sql = string.Empty;
+
+                    if (newOrUpd)
+                    {
+                        sql = "INSERT INTO employe (emp_nss, emp_nom, emp_pnom, emp_salaire, emp_qualif, emp_sce) VALUES (@EmpNss, @EmpNom, @EmpPnom, @EmpSalaire, @EmpQualif, @EmpSce)";
+                        state = "ajouté";
+                    }
+                    else
+                    {
+                        sql = "UPDATE employe SET emp_nom = @EmpNom, emp_pnom = @EmpPnom, emp_salaire = @EmpSalaire, emp_qualif = @EmpQualif, emp_sce = @EmpSce WHERE emp_nss = @EmpNss";
+                        state = "modifié";
+                    }
+                    
                     cmd.Connection = Program.connexionBdd;
                     cmd.CommandText = sql;
 
-                    string empNss = tb_EmpNss.Text;
-                    string empNom = tb_EmpNom.Text;
-                    string empPnom = tb_EmpPnom.Text;
-                    decimal empSalaire = decimal.Parse(tb_EmpSal.Text);
-                    string empQualif = tb_EmpQual.Text;
-                    string empSce = (cb_EmpSce.SelectedItem as dynamic).Value;
-
-                    cmd.Parameters.AddWithValue("@EmpNss", empNss);
-                    cmd.Parameters.AddWithValue("@EmpNom", empNom);
-                    cmd.Parameters.AddWithValue("@EmpPnom", empPnom);
-                    cmd.Parameters.AddWithValue("@EmpSalaire", empSalaire);
-                    cmd.Parameters.AddWithValue("@EmpQualif", empQualif);
-                    cmd.Parameters.AddWithValue("@EmpSce", empSce);
+                    cmd.Parameters.AddWithValue("@EmpNss", tb_EmpNss.Text);
+                    cmd.Parameters.AddWithValue("@EmpNom", tb_EmpNom.Text);
+                    cmd.Parameters.AddWithValue("@EmpPnom", tb_EmpPnom.Text);
+                    cmd.Parameters.AddWithValue("@EmpSalaire", decimal.Parse(tb_EmpSal.Text));
+                    cmd.Parameters.AddWithValue("@EmpQualif", tb_EmpQual.Text);
+                    cmd.Parameters.AddWithValue("@EmpSce", (cb_EmpSce.SelectedItem as dynamic).Value);
 
                     cmd.ExecuteNonQuery();
 
-                    MessageBox.Show("Employé ajouté avec succès.");
+                    MessageBox.Show("Employé " + state + " avec succès.");
                     DataLoad();
                     InitControls();
+                    newOrUpd = false;
                 }
                 catch (Exception ex)
                 {

@@ -14,6 +14,7 @@ namespace GesPerWinForm
 {
     public partial class fmAbsence : Form
     {
+        private bool newOrUpd = false; // false = update, true = new
         /// <summary>
         /// Constructeur de la classe fmAbsence.
         /// </summary>
@@ -49,6 +50,8 @@ namespace GesPerWinForm
             mi_delete.Enabled = false;
             mi_save.Enabled = false;
             mi_modify.Enabled = false;
+
+            lv_Abs.Enabled = true;
         }
         private void AffListEmp()
         {
@@ -264,6 +267,8 @@ namespace GesPerWinForm
             mi_modify.Enabled = false;
             mi_delete.Enabled = false;
             AffListTypAbs(null);
+
+            newOrUpd = true;
         }
 
         private void mi_modify_Click(object sender, EventArgs e)
@@ -282,13 +287,34 @@ namespace GesPerWinForm
 
         private void mi_save_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Are you sure you want to add/save this absence ?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question) == DialogResult.Yes && (cb_EmpAbs.SelectedItem as dynamic).Value != string.Empty)
+            string ehe = string.Empty;
+            if (newOrUpd)
+            {
+                ehe = "add";
+            }
+            else
+            {
+                ehe = "save";
+            }
+            if (MessageBox.Show("Are you sure you want to " + ehe + " this absence ?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question) == DialogResult.Yes && (cb_EmpAbs.SelectedItem as dynamic).Value != string.Empty)
             {
                 try
                 {
-                    string sql = "INSERT INTO absence (abs_emp, abs_debut, abs_fin, abs_typ) VALUES (@absemp, @absdeb, @absfin, @abstyp)";
-
                     SqlCommand cmd = new SqlCommand();
+                    string state = string.Empty;
+                    string sql = string.Empty;
+
+                    if (newOrUpd)
+                    {
+                        sql = "INSERT INTO absence (abs_emp, abs_debut, abs_fin, abs_typ) VALUES (@absemp, @absdeb, @absfin, @abstyp);";
+                        state = "ajouté";
+                    }
+                    else
+                    {
+                        sql = "UPDATE absence SET abs_fin = @absfin, abs_typ = @abstyp WHERE abs_emp = @absemp AND abs_debut = @absdeb;";
+                        state = "modifié";
+                    }
+
                     cmd.Connection = Program.connexionBdd;
                     cmd.CommandText = sql;
 
@@ -299,10 +325,11 @@ namespace GesPerWinForm
 
                     cmd.ExecuteNonQuery();
 
-                    MessageBox.Show("Absence ajouté avec succès.");
+                    MessageBox.Show("Absence " + state + " avec succès.");
                     lv_Abs.Items.Clear();
                     AffAbsEmp();
                     InitControls();
+                    newOrUpd = false;
                 }
                 catch (Exception ex)
                 {

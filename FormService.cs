@@ -16,6 +16,7 @@ namespace GesPerWinForm
 {
     public partial class fmService : Form
     {
+        private bool newOrUpd = false; // false = update, true = new
         /// <summary>
         /// Constructeur de la classe fmService.
         /// </summary>
@@ -190,6 +191,8 @@ namespace GesPerWinForm
             mi_modify.Enabled = false;
             mi_save.Enabled = true;
             mi_delete.Enabled = false;
+
+            newOrUpd = true;
         }
 
         private void mi_modify_Click(object sender, EventArgs e)
@@ -201,7 +204,7 @@ namespace GesPerWinForm
             rb_Admin.Enabled = true;
             rb_Prod.Enabled = true;
 
-            mi_new.Enabled = true;
+            mi_new.Enabled = false;
             mi_modify.Enabled = false;
             mi_save.Enabled = true;
             mi_delete.Enabled = false;
@@ -240,15 +243,38 @@ namespace GesPerWinForm
 
         private void mi_save_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("Are you sure you want to add/save the service ?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question) == DialogResult.Yes && tb_SceBud.Text != string.Empty && tb_SceDes.Text != string.Empty)
+            string ehe = string.Empty;
+            if (newOrUpd)
+            {
+                ehe = "add";
+            }
+            else
+            {
+                ehe = "save";
+            }
+            if (MessageBox.Show("Are you sure you want to " + ehe + " the service ?", "Confirmation", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question) == DialogResult.Yes && tb_SceBud.Text != string.Empty && tb_SceDes.Text != string.Empty)
             {
                 try
                 {
-                    string sceType;
-                    string sceCode = tb_SceCode.Text;
-                    string sceDes = tb_SceDes.Text;
-                    decimal sceBudget = decimal.Parse(tb_SceBud.Text);
+                    SqlCommand cmd = new SqlCommand();
+                    string state = string.Empty;
+                    string sql = string.Empty;
 
+                    if (newOrUpd)
+                    {
+                        sql = "INSERT INTO service (sce_code, sce_des, sce_type, sce_budget) VALUES (@SceCode, @SceDes, @SceType, @SceBudget)";
+                        state = "ajouté";
+                    }
+                    else
+                    {
+                        sql = "UPDATE service SET sce_des = @SceDes, sce_type = @SceType, sce_budget = @SceBudget WHERE sce_code = @SceCode";
+                        state = "modifié";
+                    }
+
+                    cmd.Connection = Program.connexionBdd;
+                    cmd.CommandText = sql;
+
+                    string sceType;
                     if (rb_Admin.Checked == true)
                     {
                         sceType = "administratif";
@@ -262,20 +288,14 @@ namespace GesPerWinForm
                         sceType = "productif";
                     }
 
-                    string sql = "INSERT INTO service (sce_code, sce_des, sce_type, sce_budget) VALUES (@SceCode, @SceDes, @SceType, @SceBudget)";
-
-                    SqlCommand cmd = new SqlCommand();
-                    cmd.Connection = Program.connexionBdd;
-                    cmd.CommandText = sql;
-
-                    cmd.Parameters.AddWithValue("@SceCode", sceCode);
-                    cmd.Parameters.AddWithValue("@SceDes", sceDes);
+                    cmd.Parameters.AddWithValue("@SceCode", tb_SceCode.Text);
+                    cmd.Parameters.AddWithValue("@SceDes", tb_SceDes.Text);
                     cmd.Parameters.AddWithValue("@SceType", sceType);
-                    cmd.Parameters.AddWithValue("@SceBudget", sceBudget);
+                    cmd.Parameters.AddWithValue("@SceBudget", decimal.Parse(tb_SceBud.Text));
 
                     cmd.ExecuteNonQuery();
 
-                    MessageBox.Show("Service ajouté avec succès.");
+                    MessageBox.Show("Service " + state + " avec succès.");
                     DataLoad();
                     mi_new.Enabled = true;
                     mi_save.Enabled = false;
@@ -283,6 +303,7 @@ namespace GesPerWinForm
                     tb_SceCode.Text = string.Empty;
                     tb_SceDes.Text = string.Empty;
                     rb_Unknown.Checked = true;
+                    newOrUpd = false;
                 }
                 catch (Exception exception)
                 {
