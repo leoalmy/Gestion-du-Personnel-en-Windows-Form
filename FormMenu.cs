@@ -10,6 +10,9 @@ using System.Windows.Forms;
 
 namespace GesPerWinForm
 {
+    /// <summary>
+    /// Classe de la fenêtre de menu.
+    /// </summary>
     public partial class fmMenu : Form
     {
         private bool flagExuit = true;
